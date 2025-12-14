@@ -1,0 +1,26 @@
+services:
+  backup:
+    image: muqimjon/rclone-backup:latest
+    container_name: postgres_backup_scheduler
+    restart: always
+    environment:
+      PROJECT_NAME: your_project_name
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: root
+      PGDATABASE: your_database_name
+      BACKUP_DIR: /backup
+      RCLONE_CONFIG: /root/.config/rclone/rclone.conf
+      RCLONE_REMOTE: rclone_remote_name
+      RCLONE_PATH: cloud/backups/your_project_name
+      CRON_SCHEDULE: "0 0 * * *"
+      COMPRESSION_LEVEL: 9
+      TZ: Asia/Tashkent
+    volumes:
+      - ./data/backup:/backup
+      - ./rclone.conf:/root/.config/rclone/rclone.conf:ro
+    depends_on:
+      - postgres
+    networks:
+      - web
