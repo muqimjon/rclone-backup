@@ -1,26 +1,93 @@
 services:
-  backup:
-    image: muqimjon/rclone-backup:latest
-    container_name: postgres_backup_scheduler
+  app:
+    image: <registry/image-name>:<tag>
+    container_name: app
+    ports:
+      - "80:80"
+      - "443:443"
     restart: always
     environment:
-      PROJECT_NAME: your_project_name
-      PGHOST: postgres
-      PGPORT: 5432
-      PGUSER: postgres
-      PGPASSWORD: root
-      PGDATABASE: your_database_name
-      BACKUP_DIR: /backup
-      RCLONE_CONFIG: /root/.config/rclone/rclone.conf
-      RCLONE_REMOTE: rclone_remote_name
-      RCLONE_PATH: cloud/backups/your_project_name
-      CRON_SCHEDULE: "0 0 * * *"
-      COMPRESSION_LEVEL: 9
-      TZ: Asia/Tashkent
-    volumes:
-      - ./data/backup:/backup
-      - ./rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Username=postgres;Password=pg-password;Database=db-name;
     depends_on:
       - postgres
     networks:
       - web
+
+  postgres:
+    image: postgres:<pg-version>
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: pg-password
+      POSTGRES_DB: db-name
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql
+    networks:
+      - web
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    volumes:
+      - ./data/pgadmin-data:/var/lib/pgadmin
+      - ./servers.json:/pgadmin4/servers.json
+    networks:
+      - web
+
+  backup:
+    build:
+      context: ./backup
+      args:
+        PG_VERSION: <pg-version>
+    image: backup-image-name
+    container_name: backup
+    restart: always
+    
+    command: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "--", "/usr/local/bin/entrypoint.sh"]
+    
+    environment:
+      PROJECT_NAME: <project-name>
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: pg-password
+      PGDATABASE: db-name
+      BACKUP_DIR: /backup
+      
+      RCLONE_CONFIG: /tmp/rclone.conf 
+      RCLONE_REMOTE: gdrive
+      RCLONE_PATH: cloud/backups/<project-name>/
+      
+      CRON_BACKUP_SCHEDULE: "*/1 * * * *"
+
+      COMPRESSION_LEVEL: 9
+      TZ: Asia/Tashkent
+      
+      RCLONE_CONFIG_CONTENT: |
+        [gdrive]
+        type = drive
+        scope = drive
+        token = { <credentials> }
+        team_drive =
+        
+    volumes:
+      - ./data/backup:/backup
+    depends_on:
+      - postgres
+    networks:
+      - web
+
+networks:
+  web:
+    driver: bridge
