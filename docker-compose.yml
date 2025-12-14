@@ -1,6 +1,6 @@
 services:
   app:
-    image: <registry/image-name>:<tag>
+    image: <registry/image-name>:<tag> 
     container_name: app
     ports:
       - "80:80"
@@ -14,7 +14,7 @@ services:
       - web
 
   postgres:
-    image: postgres:<pg-version>
+    image: postgres:<pg-version> # postgres versiyasi
     container_name: postgres
     restart: always
     environment:
@@ -49,7 +49,7 @@ services:
     build:
       context: ./backup
       args:
-        PG_VERSION: <pg-version>
+        PG_VERSION: <pg-version> # postgres versiyasi bir xil bo'lishi kerak
     image: backup-image-name
     container_name: backup
     restart: always
@@ -57,7 +57,7 @@ services:
     command: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "--", "/usr/local/bin/entrypoint.sh"]
     
     environment:
-      PROJECT_NAME: <project-name>
+      PROJECT_NAME: <project-name> # loyihangiz nomi
       PGHOST: postgres
       PGPORT: 5432
       PGUSER: postgres
@@ -67,19 +67,15 @@ services:
       
       RCLONE_CONFIG: /tmp/rclone.conf 
       RCLONE_REMOTE: gdrive
-      RCLONE_PATH: cloud/backups/<project-name>/
+      RCLONE_PATH: cloud/backups/
       
-      CRON_BACKUP_SCHEDULE: "*/1 * * * *"
+      CRON_BACKUP_SCHEDULE: "*/1 * * * *" # Test uchun, har daqiqada zaxira olish
 
       COMPRESSION_LEVEL: 9
       TZ: Asia/Tashkent
       
       RCLONE_CONFIG_CONTENT: |
-        [gdrive]
-        type = drive
-        scope = drive
-        token = { <credentials> }
-        team_drive =
+        <rclone-configuration-content> # shaxsiy rclone sozlamalarini shu yerga joylashtiring
         
     volumes:
       - ./data/backup:/backup
