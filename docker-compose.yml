@@ -14,7 +14,7 @@ services:
       - web
 
   postgres:
-    image: postgres:<pg-version> # postgres versiyasi
+    image: postgres:latest
     container_name: postgres
     restart: always
     environment:
@@ -49,7 +49,7 @@ services:
     build:
       context: ./backup
       args:
-        PG_VERSION: <pg-version> # postgres versiyasi bir xil bo'lishi kerak
+        PG_VERSION: latest # postgres versiyasi bir xil bo'lishi kerak
     image: backup-image-name
     container_name: backup
     restart: always
@@ -57,7 +57,7 @@ services:
     command: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "--", "/usr/local/bin/entrypoint.sh"]
     
     environment:
-      PROJECT_NAME: <project-name> # loyihangiz nomi
+      PROJECT_NAME: <project-name> # loyihangiz nomi - Fayl nomlarida ishlatiladi: project-name_db-name_date.sql.gz
       PGHOST: postgres
       PGPORT: 5432
       PGUSER: postgres
@@ -65,20 +65,25 @@ services:
       PGDATABASE: db-name
       BACKUP_DIR: /backup
       
-      RCLONE_CONFIG: /tmp/rclone.conf 
+      RCLONE_CONFIG: /etc/rclone/rclone.conf # rclone konfiguratsiya fayli yo'li - default!
       RCLONE_REMOTE: gdrive
       RCLONE_PATH: cloud/backups/
+      
+      RCLONE_CONFIG_CONTENT: | # RCLONE_CONFIG mavjud bo'lmasa, ma'lumotlarni to'g'ridan to'g'ri kiritish
+        [gdrive]   # shaxsiy rclone sozlamalarini shu yerga joylashtiring
+        type = drive
+        scope = drive
+        token = 
+        team_drive =
       
       CRON_BACKUP_SCHEDULE: "*/1 * * * *" # Test uchun, har daqiqada zaxira olish
 
       COMPRESSION_LEVEL: 9
       TZ: Asia/Tashkent
-      
-      RCLONE_CONFIG_CONTENT: |
-        <rclone-configuration-content> # shaxsiy rclone sozlamalarini shu yerga joylashtiring
         
     volumes:
       - ./data/backup:/backup
+      - ./backup/rclone.conf:/etc/rclone/rclone.conf:ro # rclone konfiguratsiya fayli - default!
     depends_on:
       - postgres
     networks:
