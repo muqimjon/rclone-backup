@@ -4,12 +4,12 @@ FROM debian:stable-slim
 ARG PG_VERSION=latest
 ENV PG_VERSION=${PG_VERSION}
 
-# Postgres client, rclone, bash, tzdata, ca-certificates va curl ni o'rnatish
+# Postgres client, rclone, bash, tzdata, ca-certificates, curl, cron VA ZIP ni o'rnatish
 RUN apt-get update && \
     if [ "$PG_VERSION" = "latest" ]; then \
-        apt-get install -y postgresql-client rclone bash tzdata ca-certificates curl cron; \
+        apt-get install -y postgresql-client rclone bash tzdata ca-certificates curl cron zip; \
     else \
-        apt-get install -y postgresql-client-${PG_VERSION} rclone bash tzdata ca-certificates curl cron; \
+        apt-get install -y postgresql-client-${PG_VERSION} rclone bash tzdata ca-certificates curl cron zip; \
     fi && \
     rm -rf /var/lib/apt/lists/*
 

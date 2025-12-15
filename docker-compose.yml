@@ -76,10 +76,13 @@ services:
         token = 
         team_drive =
       
-      CRON_BACKUP_SCHEDULE: "*/1 * * * *" # Test uchun, har daqiqada zaxira olish
+      CRON_BACKUP_SCHEDULE: "*/2 * * * *" # Test uchun, har 2 daqiqada zaxira olish
+      CRON_CLEANUP_SCHEDULE: "*/1 * * * *" # Test uchun, zahirani google drivega yuklash
 
       COMPRESSION_LEVEL: 9
       TZ: Asia/Tashkent
+
+      BACKUP_PASSWORD: Sizning_Kuchli_Maxfiy_Parolingiz # zaxira fayllarini shifrlash uchun parol
         
     volumes:
       - ./data/backup:/backup

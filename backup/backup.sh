@@ -1,26 +1,39 @@
 #!/usr/bin/env bash
-# Xavfsiz rejim: Xato yuz bersa yoki o'zgaruvchi topilmasa to'xtatadi.
 set -euo pipefail
 
 # --- Fayl nomini yaratish ---
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-FILENAME="${PROJECT_NAME}_${PGDATABASE}_${TIMESTAMP}.sql.gz"
+SQL_FILENAME="${PROJECT_NAME}_${PGDATABASE}_${TIMESTAMP}.sql"
+FILENAME="${PROJECT_NAME}_${PGDATABASE}_${TIMESTAMP}.zip"
 LOCAL_FILE_PATH="${BACKUP_DIR}/${FILENAME}"
 
-echo ">>> Backup boshlandi: ${TIMESTAMP} (PG Dump)"
-
-# 1. PostgreSQL dump olish va Gzip yordamida siqish
-if pg_dump -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Fp | gzip -${COMPRESSION_LEVEL} > "${LOCAL_FILE_PATH}"; then
-    echo "✅ Dump va siqish muvaffaqiyatli: ${FILENAME}"
+# Log xabarini parollash holatiga qarab chiqarish
+if [ -n "${BACKUP_PASSWORD:-}" ]; then
+    echo ">>> Backup boshlandi: ${TIMESTAMP} (PG Dump + Zip + Parollash)"
 else
-    echo "❌ Xatolik: pg_dump/DB ulanishi muvaffaqiyatsiz."
+    echo ">>> Backup boshlandi: ${TIMESTAMP} (PG Dump + Zip)"
+fi
+
+# 1. PostgreSQL dump olish, siqish va shifrlash (agar parol berilgan bo'lsa)
+if [ -n "${BACKUP_PASSWORD:-}" ]; then
+    pg_dump -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Fp | zip -j -z -P "${BACKUP_PASSWORD}" "${LOCAL_FILE_PATH}" -n "${SQL_FILENAME}" -
+    DUMP_STATUS=$?
+else
+    pg_dump -h "${PGHOST}" -p "${PGPORT}" -U "${PGUSER}" -d "${PGDATABASE}" -Fp | zip -j -z "${LOCAL_FILE_PATH}" -n "${SQL_FILENAME}" -
+    DUMP_STATUS=$?
+fi
+
+if [ $DUMP_STATUS -eq 0 ]; then
+    echo "✅ Dump, siqish va $([ -n "${BACKUP_PASSWORD:-}" ] && echo "parollash" || echo "siqish") muvaffaqiyatli: ${FILENAME}"
+else
+    echo "❌ Xatolik: pg_dump/zip muvaffaqiyatsiz."
     exit 1
 fi
 
-# PGPASSWORD ni muhitdan o'chirish (xavfsizlik uchun)
+# PGPASSWORD ni o'chirish (xavfsizlik uchun)
 unset PGPASSWORD
 
-# 2. Cleanup faylini ishga tushirish (Yuklash va lokal tozalash)
+# 2. Cleanup faylini ishga tushirish
 echo "--- ♻️ Yuklash va Qoldiq tozalash boshlandi ---"
 /usr/local/bin/cleanup.sh
 
