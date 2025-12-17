@@ -50,10 +50,9 @@ services:
       context: ./backup
       args:
         PG_VERSION: latest # postgres versiyasi bir xil bo'lishi kerak
-    image: backup-image-name
+    image: muqimjon/rclone-backup:latest
     container_name: backup
     restart: always
-    
     command: ["/usr/local/bin/wait-for-it.sh", "postgres:5432", "--", "/usr/local/bin/entrypoint.sh"]
     
     environment:
@@ -63,35 +62,30 @@ services:
       PGUSER: postgres
       PGPASSWORD: pg-password
       PGDATABASE: db-name
+      
       BACKUP_DIR: /backup
-      
-      RCLONE_CONFIG: /etc/rclone/rclone.conf # rclone konfiguratsiya fayli yo'li - default!
-      RCLONE_REMOTE: gdrive
-      RCLONE_PATH: cloud/backups/
-      
-      RCLONE_CONFIG_CONTENT: | # RCLONE_CONFIG mavjud bo'lmasa, ma'lumotlarni to'g'ridan to'g'ri kiritish
-        [gdrive]   # shaxsiy rclone sozlamalarini shu yerga joylashtiring
-        type = drive
-        scope = drive
-        token = 
-        team_drive =
-      
-      CRON_BACKUP_SCHEDULE: "*/2 * * * *" # Test uchun, har 2 daqiqada zaxira olish
-      CRON_CLEANUP_SCHEDULE: "*/1 * * * *" # Test uchun, zahirani google drivega yuklash
-
       COMPRESSION_LEVEL: 9
-      TZ: Asia/Tashkent
-
       BACKUP_PASSWORD: Sizning_Kuchli_Maxfiy_Parolingiz # zaxira fayllarini shifrlash uchun parol
+      MIN_LOCAL_BACKUPS: 0
+      MAX_LOCAL_BACKUPS: 3
+
+      RCLONE_CONFIG: /etc/rclone/rclone.conf # rclone konfiguratsiya fayli yo'li - default!
+      RCLONE_REMOTE: gdrive # konfiguratsiya nomi
+      RCLONE_PATH: cloud/backups/
+      RCLONE_CONFIG_DIR: /tmp/rclone
+
+      CRON_BACKUP_SCHEDULE: "*/2 * * * *" # Test uchun, har 2 daqiqada zaxira olish
+      CRON_UPLOAD_SCHEDULE: "*/3 * * * *" # Test uchun, zahirani google drivega yuklash
+      CRON_CLEANUP_SCHEDULE: "*/1 * * * *"
+
+      TZ: Asia/Tashkent
         
     volumes:
       - ./data/backup:/backup
       - ./backup/rclone.conf:/etc/rclone/rclone.conf:ro # rclone konfiguratsiya fayli - default!
+
     depends_on:
       - postgres
+
     networks:
       - web
-
-networks:
-  web:
-    driver: bridge
